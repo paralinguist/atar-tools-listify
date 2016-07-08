@@ -1,0 +1,185 @@
+<html>
+<head>
+  <title>Class Listify</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+</head>
+<body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+<script>
+  //JDI: Scapegoat
+  var userdata = [];
+  $(document).on('click', '#get-csv', function()
+  { 
+    downloadCSV({ filename: "class_list.csv" });
+  });
+  $(document).on('click', '#process-list', function()
+  {  
+    $('#processed-list').val();
+    var numberOfUsers = userdata.length;
+    var outputFormat = $("input[type='radio'][name='list-format']:checked").val();
+    var processedList = '';
+    for (var i = 0; i < numberOfUsers; i++) 
+    {
+      username = userdata[i].username;
+      firstname = userdata[i].firstname;
+      surname = userdata[i].surname;
+      switch (outputFormat)
+      {
+        case 'surname_comma':
+          processedList += surname + ', ' + firstname + '\n';
+          break;
+        case 'plain_name':
+          processedList += firstname + ' ' + surname + '\n';
+          break;
+        case 'username':
+          processedList += username + '\n';
+          break;
+      }
+    }
+    $('#processed-list').val(processedList.slice(0, -1));
+  });
+  $(document).on('blur', '#raw-list', function()
+  {
+    var rawList = $('#raw-list').val().split('\n');
+    var nameSplit = -1;
+    var firstname = '';
+    var surname = '';
+    var username = '';
+    for(var i = 0;i < rawList.length;i++)
+    {
+      currentLine = $.trim(rawList[i]);
+      if (/\ /i.test(currentLine) && currentLine != '')
+      {
+        nameSplit = currentLine.indexOf(' ');
+        firstname = currentLine.slice(0, nameSplit);
+        surname = currentLine.slice(nameSplit);
+      }
+      else if (/\./i.test(currentLine) && currentLine != '')
+      {
+        username = currentLine;
+        userdata.push({firstname: firstname, surname: surname, username: username});
+      }
+    }
+  });
+
+  //CSV functions stolen wholesale from:
+  //halistechnology.com/2015/05/28/use-javascript-to-export-your-data-as-csv/
+  function convertArrayOfObjectsToCSV(args) 
+  {
+    var result, ctr, keys, columnDelimiter, lineDelimiter, data;
+
+    data = args.data || null;
+    if (data == null || !data.length)
+    {
+      return null;
+    }
+
+    columnDelimiter = args.columnDelimiter || ',';
+    lineDelimiter = args.lineDelimiter || '\n';
+
+    keys = Object.keys(data[0]);
+
+    result = '';
+    result += keys.join(columnDelimiter);
+    result += lineDelimiter;
+
+    data.forEach(function(item) 
+    {
+      ctr = 0;
+      keys.forEach(function(key)
+      {
+        if (ctr > 0) result += columnDelimiter;
+
+        result += item[key];
+        ctr++;
+      });
+      result += lineDelimiter;
+    });
+
+    return result;
+  }
+
+  function downloadCSV(args)
+  {  
+    var data, filename, link;
+    var csv = convertArrayOfObjectsToCSV(
+    {
+      data: userdata
+    });
+    if (csv == null) return;
+
+    filename = args.filename || 'export.csv';
+
+    if (!csv.match(/^data:text\/csv/i)) 
+    {
+      csv = 'data:text/csv;charset=utf-8,' + csv;
+    }
+    data = encodeURI(csv);
+
+    link = document.createElement('a');
+    link.setAttribute('href', data);
+    link.setAttribute('download', filename);
+    link.click();
+  }
+</script>
+<form class="form-horizontal">
+<fieldset>
+
+<!-- Form Name -->
+<legend>Class Listify</legend>
+
+<!-- Textarea -->
+<div class="form-group">
+  <label class="col-md-4 control-label" for="raw-list">Raw Class List</label>
+  <div class="col-md-4">                     
+    <textarea class="form-control" id="raw-list" name="raw-list" placeholder="enter class list from Connect"></textarea>
+  </div>
+</div>
+
+<!-- Multiple Radios -->
+<div class="form-group">
+  <label class="col-md-4 control-label" for="list-format">Format</label>
+  <div class="col-md-4">
+  <div class="radio">
+    <label for="list-format-0">
+      <input type="radio" name="list-format" id="list-format-0" value="surname_comma" checked="checked">
+      Surname, Firstname
+    </label>
+	</div>
+  <div class="radio">
+    <label for="list_format-1">
+      <input type="radio" name="list-format" id="list-format-1" value="plain_name">
+      Firstname Surname
+    </label>
+	</div>
+  <div class="radio">
+    <label for="list_format-2">
+      <input type="radio" name="list-format" id="list-format-2" value="username">
+      connect.username
+    </label>
+	</div>
+  </div>
+</div>
+
+<!-- Textarea -->
+<div class="form-group">
+  <label class="col-md-4 control-label" for="processed-list">Processed Class List</label>
+  <div class="col-md-4">                     
+    <textarea class="form-control" id="processed-list" name="processed-list"></textarea>
+  </div>
+</div>
+
+<!-- Button -->
+<div class="form-group">
+  <label class="col-md-4 control-label" for="process-list"></label>
+  <div class="col-md-4">
+    <button id="process-list" type="button" name="process-list" class="btn btn-primary">Listify!</button>
+    <button id="get-csv" type="button" name="get-csv" class="btn btn-primary">Download CSV</button>
+  </div>
+</div>
+
+</fieldset>
+</form>
+</body>
+</html>
